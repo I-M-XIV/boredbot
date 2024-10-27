@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoredBot -  Just a Simple Chatbot</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+</head>
+<body>
+    <div class="chatbot-container">
+        <h1>BoredBot</h1>
+        <button onclick="clear_chat()" class="clear-button">Clear Chat</button>
+        <div id="chatbox" class="chatbox">
+            <div id="chat-log" class="chat-log"></div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Type /help for available prompts..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>    
+    <py-script>
+        from js import document, window
+        from datetime import datetime
+        from pyodide.ffi import create_proxy
+        import random
+    
+        def generate_response(user_message):
+            responses = {
+                "hello": "Hello! How can I help you today?",
+                "hi": "Hi there! What's on your mind?",
+                "help": "I'm here to assist you! You can type '/help' to see available prompts and '/commands' for commands.",
+                "commands": "Available commands: /help, /commands, /clear, /restart",
+                "bye": "Goodbye! Have a great day!",
+                "thanks": "You're welcome! Let me know if there's anything else I can help with.",
+                "weather": "I'm not connected to real-time data, but I hope the weather is nice!",
+                "joke": [
+                    "Why did the programmer go broke? Because he used up all his cache!",
+                    "Why do programmers prefer dark mode? Because light attracts bugs!",
+                    "How many programmers does it take to change a light bulb? None, that's a hardware problem!"
+                ],
+                "boredbot": "Hi! I'm BoredBot, just a simple chatbot. What's your name?",
+                "default": [
+                    "I'm not sure how to respond to that. Could you rephrase?",
+                    "Hmm, I'm not familiar with that. Could you try asking in another way?",
+                    "Interesting! Tell me more about that."
+                ]
+            }
+            
+            positive_responses = ["That sounds great!", "I'm glad to hear that!"]
+            negative_responses = ["I'm sorry to hear that.", "I hope things get better!"]
+    
+            if user_message.startswith("/"):
+                return handle_command(user_message)
+    
+            if "happy" in user_message or "good" in user_message:
+                return random.choice(positive_responses)
+            elif "sad" in user_message or "bad" in user_message:
+                return random.choice(negative_responses)
+    
+            if "my name is" in user_message.lower():
+                name = user_message.split("my name is")[-1].strip()
+                return f"Nice to meet you, {name}!"
+    
+            for keyword, response in responses.items():
+                if keyword in user_message.lower():
+                    if isinstance(response, list):
+                        return random.choice(response)
+                    return response
+    
+            return random.choice(responses["default"])
+    
+        def handle_command(command):
+            if command == "/help":
+                return "Here are some prompts you can try:\n - hello\n - hi\n - help\n - bye\n - thanks\n - weather\n - tell me a joke\n - my name is [your name]"
+            elif command == "/commands":
+                return "Available commands: /help, /commands, /clear, /restart"
+            elif command == "/clear":
+                clear_chat()
+                return "Chat cleared."
+            elif command == "/restart":
+                return "Restarting chat. Hello! How can I assist you?"
+            else:
+                return f"Unknown command: {command}. Type /help to see available prompts."
+    
+        def clear_chat():
+            chat_log = document.getElementById("chat-log")
+            chat_log.innerHTML = ""
+    
+        def scroll_to_bottom():
+            chat_log = document.getElementById("chatbox")
+            chat_log.scrollTop = chat_log.scrollHeight
+    
+        def sendMessage(*args):
+            user_message = document.getElementById("user-input").value
+            if user_message:
+                chat_log = document.getElementById("chat-log")
+                timestamp = datetime.now().strftime('%H:%M')
+                chat_log.innerHTML += f'<div class="user-message"><span class="timestamp">{timestamp}</span> You: {user_message}</div>'
+    
+                chat_log.innerHTML += '<div id="typing-indicator" class="bot-message">Bot is typing...</div>'
+                scroll_to_bottom()  # Ensure scrolls to bottom after user message
+    
+                bot_response = generate_response(user_message)
+                document.getElementById("user-input").value = ""
+    
+                def display_bot_response():
+                    typing_indicator = document.getElementById("typing-indicator")
+                    if typing_indicator:
+                        typing_indicator.remove()
+                    chat_log.innerHTML += f'<div class="bot-message"><span class="timestamp">{timestamp}</span> Bot: {bot_response}</div>'
+                    scroll_to_bottom()  # Ensure scrolls to bottom after bot response
+    
+                window.setTimeout(create_proxy(display_bot_response), 1000)
+    
+        def handle_key_press(event):
+            if event.key == "Enter":
+                sendMessage()
+    
+        user_input = document.getElementById("user-input")
+        user_input.addEventListener("keypress", create_proxy(handle_key_press))
+    
+        window.sendMessage = sendMessage
+        window.clear_chat = clear_chat
+    </py-script>
+</body>
+</html>
