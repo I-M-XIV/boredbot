@@ -10,7 +10,10 @@
 </head>
 <body>
     <div class="chatbot-container">
-        <h1>BoredBot</h1>
+        <div class="header-container">
+            <img src="images/BoredBot.png" alt="BoredBot Logo" class="logo">
+            <h1>BoredBot</h1>
+        </div>
         <div class="button-group">
             <button onclick="clear_chat()" class="clear-button">Clear Chat</button>
             <button onclick="toggleTheme()" class="theme-toggle-button">Mode</button>
@@ -23,176 +26,84 @@
             <button onclick="sendMessage()">Send</button>
         </div>
     </div>    
-    <py-script>
-        from js import document, window
-        from datetime import datetime
-        from pyodide.ffi import create_proxy
-        import re
-
-        # Initialize indices for looping responses
-        response_indices = {
-            "boredbot": 0,
-            "joke": 0,
-            "quote": 0,
-            "motivation": 0,
-            "default": 0
-        }
-
-        responses = {
-            "hi": "Hello! What's on your mind?",
-            "hello": "Hi! How can I help you today?",
-            "help": "I'm here to assist! Type '/help' for prompts or '/commands' for commands.",
-            "commands": "Type '/commands' to see command prompts",
-            "bye": "Goodbye! Have a great day!",
-            "thanks": "You're welcome! Let me know if there's anything else I can help with.",
-            "boredbot": [
-                "Hi! I'm BoredBot, just a simple chatbot, how can I help you?",
-                "Hi! I'm BoredBot, just a simple chatbot, I can perform basic calculations for you.",
-                "Hi! I'm BoredBot, just a simple chatbot, how are you today?",
-                "Hi! I'm BoredBot, just a simple chatbot, what is your name?"
+    <script type="py-script">
+        from js import document
+        
+        # Initialize global variables
+        user_name = None
+        
+        # Sentiment words and responses
+        sentiment_words = {
+            "positive": [
+                "happy", "great", "good", "fantastic", "awesome", "love", "excited",
+                "wonderful", "amazing", "excellent", "fortunate", "marvelous", "positive",
+                "nice", "pleasant", "enjoy", "delight", "cheerful", "perfect", "smile"
             ],
-            "joke": [
-                "Why did the programmer go broke? He used up all his cache!",
-                "Why do programmers prefer dark mode? Light attracts bugs!",
-                "How many programmers does it take to change a light bulb? None, that's a hardware issue!"
-            ],
-            "quote": [
-                "Knowledge is power.",
-                "The only way to do great work is to love what you do.",
-                "Simplicity is the ultimate sophistication."
-            ],
-            "motivation": [
-                "Keep pushing forward!",
-                "Believe in yourself!",
-                "Every day is a new opportunity to grow."
-            ],
-            "default": [
-                "I'm not sure how to respond to that.",
-                "Hmm, could you try saying that in another way?",
+            "negative": [
+                "sad", "bad", "terrible", "awful", "hate", "angry", "horrible",
+                "unfortunate", "miserable", "depressed", "negative", "cry", "pain",
+                "fail", "worse", "problem", "unhappy", "annoyed", "frustrated", "stress"
             ]
         }
-
-        def generate_response(user_message):
-            positive_responses = ["That sounds great!", "Glad to hear that!"]
-            negative_responses = ["I'm sorry to hear that.", "I hope things get better."]
-
-            if user_message.startswith("/"):
-                return handle_command(user_message)
-
-            if re.match(r'^\d+[\+\-\*/]\d+(\.\d+)?$', user_message.replace(" ", "")):
-                return calculate_expression(user_message)
-
-            if "happy" in user_message or "good" in user_message:
-                return positive_responses[0]
-            elif "sad" in user_message or "bad" in user_message:
-                return negative_responses[0]
-
-            if "my name is" in user_message.lower():
-                name = user_message.split("my name is")[-1].strip()
-                return f"Nice to meet you, {name}!"
-
-            for keyword, response in responses.items():
-                if keyword in user_message.lower():
-                    if isinstance(response, list):
-                        return loop_responses(keyword)
-                    return response
-
-            return loop_responses("default")
-
-        def loop_responses(response_type):
-            index = response_indices[response_type]
-            response = responses[response_type][index]
-            response_indices[response_type] = (index + 1) % len(responses[response_type])
-            return response
-
-        def handle_command(command):
-            if command == "/help":
-                return "Try prompts like 'hi', 'hello', 'boredbot', 'commands', 'help', 'thanks', 'bye', 'joke', 'quote', 'motivation', my name is [your name]."
-            elif command == "/commands":
-                return "Commands: /help, /commands, /clear, /date, /time"
-            elif command == "/clear":
-                clear_chat()
-                return "Chat cleared."
-            elif command == "/date":
-                return f"Today's date is {datetime.now().strftime('%m-%d-%Y')}."
-            elif command == "/time":
-                current_time = datetime.now()
-                return f"The current time is {current_time.strftime('%I:%M %p')} or {current_time.strftime('%H:%M')}."
-            else:
-                return f"Unknown command: {command}. Type /help to see available prompts."
-
-        def calculate_expression(expression):
-            try:
-                result = eval(expression, {"__builtins__": None}, {})
-                return f"The result is: {result}"
-            except:
-                return "I couldn't compute that expression. Please try a valid calculation."
-
-        def clear_chat():
+        
+        positive_responses = ["That sounds great!", "Glad to hear that!", "Awesome!"]
+        negative_responses = ["I'm sorry to hear that.", "I hope things get better.", "That sounds tough."]
+        
+        # Function to handle user input and generate a response
+        def sendMessage():
+            global user_name
+            input_box = document.getElementById("user-input")
+            user_message = input_box.value.strip()
+            
+            if not user_message:
+                return  # Do nothing if input is empty
+            
+            # Clear input box
+            input_box.value = ""
+            
+            # Check if user is introducing their name
+            if "my name is" in user_message.lower() or "i am" in user_message.lower():
+                user_name = user_message.split()[-1].capitalize()  # Extract last word as name
+                display_message(f"Nice to meet you, {user_name}!", sender="BoredBot")
+                return
+            
+            # Sentiment analysis
+            response = ""
+            for word in user_message.split():
+                if word.lower() in sentiment_words["positive"]:
+                    response = positive_responses[0]
+                    break
+                elif word.lower() in sentiment_words["negative"]:
+                    response = negative_responses[0]
+                    break
+            
+            # If user input is a mathematical expression, evaluate it
+            if response == "":
+                try:
+                    # Simple mathematical evaluation using eval (only safe if strictly controlled)
+                    response = str(eval(user_message))
+                except:
+                    response = "I'm here to chat with you!"
+            
+            # Display user message with their name if available
+            display_message(user_message, sender=user_name or "You")
+            display_message(response, sender="BoredBot")
+        
+        # Function to display messages in the chat log
+        def display_message(message, sender="You"):
             chat_log = document.getElementById("chat-log")
-            chat_log.innerHTML = ""
-
-        def scroll_to_bottom():
-            chat_log = document.getElementById("chatbox")
-            chat_log.scrollTop = chat_log.scrollHeight
-
-        def sendMessage(*args):
-            user_message = document.getElementById("user-input").value
-            if user_message:
-                chat_log = document.getElementById("chat-log")
-                timestamp = datetime.now().strftime('%H:%M')
-                
-                chatbox = document.getElementById("chatbox")
-                user_class = "user-message light-mode" if "light-mode" in chatbox.classList else "user-message dark-mode"
-                bot_class = "bot-message light-mode" if "light-mode" in chatbox.classList else "bot-message dark-mode"
-                
-                chat_log.innerHTML += f'<div class="{user_class}"><span class="timestamp">{timestamp}</span> <strong>You:</strong> {user_message}</div>'
-
-                chat_log.innerHTML += f'<div id="typing-indicator" class="{bot_class}">Bot is typing...</div>'
-                scroll_to_bottom()
-
-                bot_response = generate_response(user_message)
-                document.getElementById("user-input").value = ""
-
-                def display_bot_response():
-                    typing_indicator = document.getElementById("typing-indicator")
-                    if typing_indicator:
-                        typing_indicator.remove()
-                    chat_log.innerHTML += f'<div class="{bot_class}"><span class="timestamp">{timestamp}</span> <strong>Bot:</strong> {bot_response}</div>'
-                    scroll_to_bottom()
-
-                window.setTimeout(create_proxy(display_bot_response), 1000)
-
-        def handle_key_press(event):
-            if event.key == "Enter":
-                sendMessage()
-
-        user_input = document.getElementById("user-input")
-        user_input.addEventListener("keypress", create_proxy(handle_key_press))
-
-        window.sendMessage = sendMessage
-        window.clear_chat = clear_chat
-
+            user_display_name = user_name if sender == "You" and user_name else sender
+            chat_log.innerHTML += f"<p><strong>{user_display_name}:</strong> {message}</p>"
+            chat_log.scrollTop = chat_log.scrollHeight  # Auto-scroll to the bottom
+        
+        # Clear chat log
+        def clear_chat():
+            document.getElementById("chat-log").innerHTML = ""
+        
+        # Toggle theme
         def toggleTheme():
             chatbox = document.getElementById("chatbox")
-            if "dark-mode" in chatbox.classList:
-                chatbox.classList.remove("dark-mode")
-                chatbox.classList.add("light-mode")
-            else:
-                chatbox.classList.remove("light-mode")
-                chatbox.classList.add("dark-mode")
-
-            # Update message colors based on theme
-            messages = document.querySelectorAll(".user-message, .bot-message")
-            for message in messages:
-                if "dark-mode" in chatbox.classList:
-                    message.classList.remove("light-mode")
-                    message.classList.add("dark-mode")
-                else:
-                    message.classList.remove("dark-mode")
-                    message.classList.add("light-mode")
-
-        window.toggleTheme = toggleTheme
-    </py-script>    
+            chatbox.classList.toggle("dark-mode")
+        </script>        
 </body>
 </html>

@@ -1,4 +1,3 @@
-/* Professional, Minimalist Theme */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
@@ -18,12 +17,6 @@ body {
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
     overflow: hidden;
     padding: 15px;
-}
-
-h1 {
-    text-align: center;
-    color: #eaeaea;
-    margin-bottom: 10px;
 }
 
 .button-group {
@@ -157,4 +150,23 @@ button:hover {
 .bot-message.light-mode {
     background-color: #c8d6e5;
     color: #333;
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.logo {
+    width: 80px;
+    height: auto;
+    margin-right: 10px;
+}
+
+h1 {
+    font-size: 50px;
+    color: #eaeaea;
+    margin-bottom: 0px;
 }
